@@ -140,10 +140,29 @@ print()
 #    print(dict(left_arc_set[key1,key2]))
 
 
+confusion_arc={}
+for k1,k2 in left_arc:
+    if(k1,k2) in right_arc:
+        confusion_arc[k1,k2]=left_arc[k1,k2],right_arc[k1,k2]
+        
 
-    
-
-
+#
+#print(confusion_arc)
+from collections import defaultdict
+target_dict = defaultdict(dict)
+for keys1,keys2 in confusion_arc:
+    target_dict[keys1][keys2]=confusion_arc[keys1,keys2]
       
-    
+for i in range(len(sorted_tags)):
+    print(sorted_tags[i]+":",end=" ")
+    if(sorted_tags[i] not in target_dict):
+        print(" ")
+    else:
+        for key in target_dict[sorted_tags[i]]:
+            print("[  "+key+",  "+str(target_dict[sorted_tags[i]][key][0])+",  "+str(target_dict[sorted_tags[i]][key][1])+"]", end=" ")
+        print()
+
+print()
+print("      Number of confusing arcs = "+str(len(confusion_arc)))
+   
     
