@@ -6,6 +6,7 @@ Created on Tue Mar  6 23:09:40 2018
 @author: sathyanarayanan
 """
 import numpy as np
+import sys
 print()
 print("University of Central Florida")
 print("CAP6640 Spring 2018 - Dr. Glinos")
@@ -19,6 +20,12 @@ file_open=open(corpusfile,'r')
 lines=file_open.read()
 
 sentences=lines.split("\n\n")
+
+#test file
+testfile=sys.argv[1]
+test_file_open=open(testfile,'r')
+test_line=test_file_open.read()
+
 
 print("     # sentences  : "+str(len(sentences)))
 
@@ -165,4 +172,173 @@ for i in range(len(sorted_tags)):
 print()
 print("      Number of confusing arcs = "+str(len(confusion_arc)))
    
+#developing the oracle
+print()
+print()
+print("Input Sentence:")
+test_line1=test_line.split("\n")
+for i in range(len(test_line1)):
+    print(test_line1[i], end=" ")
+print()
+print()
+print()
+print("Parsing Actions and Transitions:")
+print()
+#building the parser
+test_line2=[]
+test_line1=test_line1[:-1]
+for i in range(len(test_line1)):
+    test_line2.append(test_line1[i].split("/"))
+
+flat_list = [item for sublist in test_line2 for item in sublist]
+list_tokens=[]
+list_tags=[]
+for i in range(len(flat_list)):
+    if(i%2==0):
+        list_tokens.append(flat_list[i])
+    else:
+        list_tags.append(flat_list[i])
+
+#buffer
+buffer=list(test_line1)
+#stack
+class Stack:
+     def __init__(self):
+         self.items = []
+
+     def isEmpty(self):
+         return self.items == []
+
+     def push(self, item):
+         self.items.append(item)
+
+     def pop_top(self):
+         return self.items.pop()
+     
+     def pop_second(self):
+         return self.items.pop(-2)
+
+     def peek_top(self):
+         return self.items[len(self.items)-1]
     
+     def peek_second(self):
+         return self.items[len(self.items)-2]
+
+     def size(self):
+         return len(self.items)
+     
+     def stack(self):
+         return self.items
+     
+s=Stack()
+
+
+print("[]",end=" ")
+print("[ ",end=" ")
+print(*test_line1, sep=', ',end=" ")
+print("]",end=" ")
+print("SHIFT")
+s.push(buffer.pop(0))
+
+print("[ "+s.peek_top()+"]",end=" ")
+print("[ ",end=" ")
+print(*buffer,sep=', ',end=" ")
+print("] SHIFT")
+s.push(buffer.pop(0))
+
+while(not s.isEmpty()):
+    x1=""
+    x2=""
+    seperator="/"
+    
+    if(s.size()==1 and len(buffer)==0):
+        print("[ "+str(*s.stack())+"] [] ROOT --> "+str(*s.stack()))
+        s.pop_top()
+    else:
+        x1=x1+s.peek_top()
+        x2=x2+s.peek_second()
+        i=x2[x2.index(seperator) + len(seperator):]
+        j=x1[x1.index(seperator) + len(seperator):]
+        if((i.startswith("V") and j.startswith(".") and s.size()>=2) or (i.startswith("V") and j.startswith("R") and s.size()>=2)):
+            print("[ ",end=" ")
+            print(*s.stack(),sep=",",end=" ")
+            print("]",end=" ")
+            print("[ ",end=" ")
+            print(*buffer,sep=', ',end=" ")
+            print("] Right-Arc: "+s.peek_second()+" --> "+s.peek_top())
+            s.pop_top()
+        elif(s.size()>2 and i.startswith("I") and j.startswith(".")):
+            print("[ ",end=" ")
+            print(*s.stack(),sep=",",end=" ")
+            print("]",end=" ")
+            print("[ ",end=" ")
+            print(*buffer,sep=', ',end=" ")
+            print("] SWAP")
+            s.pop_second()
+            buffer=[x2]+buffer
+        elif(len(buffer)!=0 and (i.startswith("V") or i.startswith("I")) and (j.startswith("D") or j.startswith("I") or j.startswith("J") or j.startswith("P") or j.startswith("R"))):
+            print("[ ",end=" ")
+            print(*s.stack(),sep=",",end=" ")
+            print("]",end=" ")
+            print("[ ",end=" ")
+            print(*buffer,sep=', ',end=" ")
+            print("] SHIFT")
+            s.push(buffer.pop(0))
+        else:
+            k=i,j
+            if(s.size()>=2 and (k in left_arc and k not in confusion_arc)):
+                print("[ ",end=" ")
+                print(*s.stack(),sep=",",end=" ")
+                print("]",end=" ")
+                print("[ ",end=" ")
+                print(*buffer,sep=', ',end=" ")
+                print("] Left-Arc: "+s.peek_second()+" <-- "+s.peek_top())
+                s.pop_second()
+            elif(s.size()>=2 and (k in right_arc and k not in confusion_arc)):
+                print("[ ",end=" ")
+                print(*s.stack(),sep=",",end=" ")
+                print("]",end=" ")
+                print("[ ",end=" ")
+                print(*buffer,sep=', ',end=" ")
+                print("] Right-Arc: "+s.peek_second()+" --> "+s.peek_top())
+                s.pop_top()
+            elif(s.size()>=2 and (k in confusion_arc)):
+                ma=max(confusion_arc[k][0],confusion_arc[k][1])
+                if(ma==confusion_arc[k][0]):
+                    print("[ ",end=" ")
+                    print(*s.stack(),sep=",",end=" ")
+                    print("]",end=" ")
+                    print("[ ",end=" ")
+                    print(*buffer,sep=', ',end=" ")
+                    print("] Left-Arc: "+s.peek_second()+" <-- "+s.peek_top())
+                    s.pop_second()
+                else:
+                    print("[ ",end=" ")
+                    print(*s.stack(),sep=",",end=" ")
+                    print("]",end=" ")
+                    print("[ ",end=" ")
+                    print(*buffer,sep=', ',end=" ")
+                    print("] Right-Arc: "+s.peek_second()+" --> "+s.peek_top())
+                    s.pop_top()
+            else:
+                print("[ ",end=" ")
+                print(*s.stack(),sep=",",end=" ")
+                print("]",end=" ")
+                print("[ ",end=" ")
+                print(*buffer,sep=', ',end=" ")
+                print("] SHIFT")
+                s.push(buffer.pop(0))
+                
+            
+
+
+
+            
+            
+
+
+
+
+
+
+
